@@ -1,3 +1,4 @@
+open Lexing
 open Prelude
 
 type oattr = 
@@ -197,3 +198,125 @@ let rec free_vars (exp : exp) : IdSet.t =
     IdSet.union (free_vars str_exp) (free_vars env_exp)
   | exp ->
     List.fold_left IdSet.union IdSet.empty (map free_vars (child_exps exp))
+
+let rec gen_js_exp exp =
+  let c =
+    match exp with
+    | Null (p) -> "{ type: 'Null', pos: " ^ (gen_js_pos p) ^ " }"
+    | Undefined (p) -> "{ type: 'Undefined', pos: " ^ (gen_js_pos p) ^ " }"
+    | String (p, v) -> "{ type: 'String', pos: " ^ (gen_js_pos p) ^ ", value: " ^ (gen_js_str v) ^ " }"
+    | Num (p, v) -> "{ type: 'Num', pos: " ^ (gen_js_pos p) ^ ", value: " ^ (gen_js_num v) ^ " }"
+    | True (p) -> "{ type: 'Bool', pos: " ^ (gen_js_pos p) ^ ", value: true }"
+    | False (p) -> "{ type: 'Bool', pos: " ^ (gen_js_pos p) ^ ", value: false }"
+    | Id (p, v) -> "{ type: 'Id', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str v) ^ " }"
+    | Object (p, a, ps) -> "{ type: 'Object', pos: " ^ (gen_js_pos p) ^ ", attrs: " ^ (gen_js_attrs a) ^ ", props: [" ^ (gen_js_props ps) ^ "] }"
+    | GetAttr (p, a, x, y) -> "{ type: 'GetAttr', pos: " ^ (gen_js_pos p) ^ ", attr: " ^ (gen_js_pattr a) ^ ", obj: " ^ (gen_js_exp x) ^ ", field: " ^ (gen_js_exp y) ^ " }"
+    | SetAttr (p, a, x, y, z) -> "{ type: 'SetAttr', pos: " ^ (gen_js_pos p) ^ ", attr: " ^ (gen_js_pattr a) ^ ", obj: " ^ (gen_js_exp x) ^ ", field: " ^ (gen_js_exp y) ^ ", value: " ^ (gen_js_exp z) ^ " }"
+    | GetObjAttr (p, a, x) -> "{ type: 'GetObjAttr', pos: " ^ (gen_js_pos p) ^ ", attr: " ^ (gen_js_oattr a) ^ ", obj: " ^ (gen_js_exp x) ^ " }"
+    | SetObjAttr (p, a, x, y) -> "{ type: 'SetObjAttr', pos: " ^ (gen_js_pos p) ^ ", attr: " ^ (gen_js_oattr a) ^ ", obj: " ^ (gen_js_exp x) ^ ", values: " ^ (gen_js_exp y) ^ " }"
+    | GetField (p, x, y, z) -> "{ type: 'GetField', pos: " ^ (gen_js_pos p) ^ ", obj: " ^ (gen_js_exp x) ^ ", field: " ^ (gen_js_exp y) ^ ", arg: " ^ (gen_js_exp z) ^ " }"
+    | SetField (p, x, y, z, w) -> "{ type: 'SetField', pos: " ^ (gen_js_pos p) ^ ", obj: " ^ (gen_js_exp x) ^ ", field: " ^ (gen_js_exp y) ^ ", value: " ^ (gen_js_exp z) ^ ", args: " ^ (gen_js_exp w) ^ " }"
+    | DeleteField (p, x, y) -> "{ type: 'DeleteField', pos: " ^ (gen_js_pos p) ^ ", obj: " ^ (gen_js_exp x) ^ ", field: " ^ (gen_js_exp y) ^ " }"
+    | OwnFieldNames (p, x) -> "{ type: 'OwnFieldNames', pos: " ^ (gen_js_pos p) ^ ", obj: " ^ (gen_js_exp x) ^ " }"
+    | SetBang (p, x, y) -> "{ type: 'SetBang', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str x) ^ ", exp: " ^ (gen_js_exp y) ^ " }"
+    | Op1 (p, x, y) -> "{ type: 'Op1', pos: " ^ (gen_js_pos p) ^ ", op: " ^ (gen_js_str x) ^ ", arg: " ^ (gen_js_exp y) ^ " }"
+    | Op2 (p, x, y, z) -> "{ type: 'Op2', pos: " ^ (gen_js_pos p) ^ ", op: " ^ (gen_js_str x) ^ ", arg1: " ^ (gen_js_exp y) ^ ", arg2: " ^ (gen_js_exp z) ^ " }"
+    | If (p, x, y, z) -> "{ type: 'If', pos: " ^ (gen_js_pos p) ^ ", cond: " ^ (gen_js_exp x) ^ ", exp1: " ^ (gen_js_exp y) ^ ", exp2: " ^ (gen_js_exp z) ^ " }"
+    | App (p, x, ys) -> "{ type: 'App', pos: " ^ (gen_js_pos p) ^ ", func: " ^ (gen_js_exp x) ^ ", args: [" ^ (gen_js_exps ys) ^ "] }"
+    | Seq (p, x, y) -> "{ type: 'Seq', pos: " ^ (gen_js_pos p) ^ ", exp1: " ^ (gen_js_exp x) ^ ", exp2: " ^ (gen_js_exp y) ^ " }"
+    | Let (p, x, y, z) -> "{ type: 'Let', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str x) ^ ", defn: " ^ (gen_js_exp y) ^ ", body: " ^ (gen_js_exp z) ^ " }"
+    | Rec (p, x, y, z) -> "{ type: 'Rec', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str x) ^ ", defn: " ^ (gen_js_exp y) ^ ", body: " ^ (gen_js_exp z) ^ " }"
+    | Label (p, x, y) -> "{ type: 'Label', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str x) ^ ", exp: " ^ (gen_js_exp y) ^ " }"
+    | Break (p, x, y) -> "{ type: 'Break', pos: " ^ (gen_js_pos p) ^ ", id: " ^ (gen_js_str x) ^ ", exp: " ^ (gen_js_exp y) ^ " }"
+    | TryCatch (p, x, y) -> "{ type: 'TryCatch', pos: " ^ (gen_js_pos p) ^ ", body: " ^ (gen_js_exp x) ^ ", cat: " ^ (gen_js_exp y) ^ " }"
+    | TryFinally (p, x, y) -> "{ type: 'TryFinally', pos: " ^ (gen_js_pos p) ^ ", body: " ^ (gen_js_exp x) ^ ", fin: " ^ (gen_js_exp y) ^ " }"
+    | Throw (p, x) -> "{ type: 'Throw', pos: " ^ (gen_js_pos p) ^ ", exp: " ^ (gen_js_exp x) ^ " }"
+    | Lambda (p, x, y) -> "{ type: 'Lambda', pos: " ^ (gen_js_pos p) ^ ", ids: [" ^ (gen_js_strs x) ^ "], body: " ^ (gen_js_exp y) ^ " }"
+    | Eval (p, x, y) -> "{ type: 'Eval', pos: " ^ (gen_js_pos p) ^ ", e: " ^ (gen_js_exp x) ^ ", bindings: " ^ (gen_js_exp y) ^ " }"
+    | Hint (p, x, y) -> "{ type: 'Hint', pos: " ^ (gen_js_pos p) ^ ", s: " ^ (gen_js_str x) ^ ", e: " ^ (gen_js_exp y) ^ " }"
+  in
+    c ^ "\n"
+
+and gen_js_attrs attrs =
+  let primval = match attrs.primval with None -> "null" | Some (e) -> gen_js_exp e in
+  let code = match attrs.code with None -> "null" | Some (e) -> gen_js_exp e in
+  let proto = match attrs.proto with None -> "null" | Some (e) -> gen_js_exp e in
+  let klass = gen_js_str attrs.klass in
+  let extensible = gen_js_bool attrs.extensible in
+  "{ primval: " ^ primval ^ ", code: " ^ code ^ ", proto: " ^ proto ^ ", klass: " ^ klass ^ ", extensible: " ^ extensible ^ " }"
+
+and gen_js_prop (s, prop) =
+  let meta =
+    match prop with
+    | Data ({ value = v; writable = write; }, enum, config) ->
+      let value = gen_js_exp v in
+      let writable = gen_js_bool write in
+      let enumerable = gen_js_bool enum in
+      let configurable = gen_js_bool config in
+      "{ type: 'Data', data: { value: " ^ value ^ ", writable: " ^ writable ^ " }, enumerable: " ^ enumerable ^ ", configurable: " ^ configurable ^ " }"
+    | Accessor ({ getter = get; setter = set; }, enum, config) ->
+      let getter = gen_js_exp get in
+      let setter = gen_js_exp set in
+      let enumerable = gen_js_bool enum in
+      let configurable = gen_js_bool config in
+      "{ type: 'Accessor', accessor: { getter: " ^ getter ^ ", setter: " ^ setter ^ " }, enumerable: " ^ enumerable ^ ", configurable: " ^ configurable ^ " }"
+  in
+  "[" ^ (gen_js_str s) ^ ", " ^ meta ^ "]"
+
+and gen_js_oattr attr = 
+  match attr with
+  | Proto -> "'Proto'"
+  | Klass -> "'Klass'"
+  | Extensible -> "'Extensible'"
+  | Primval -> "'Primval'"
+  | Code -> "'Code'"
+
+and gen_js_pattr attr =
+  match attr with
+  | Value -> "'Value'"
+  | Getter -> "'Getter'"
+  | Setter -> "'Setter'"
+  | Config -> "'Config'"
+  | Writable -> "'Writable'"
+  | Enum -> "'Enum'"
+
+and gen_js_bool b = if b then "true" else "false"
+
+and gen_js_num n =
+  let v = string_of_float n in
+    if v = "nan" then "NaN" else
+    if v = "inf" then "Infinity" else
+    if v = "-inf" then "-Infinity" else
+    v
+
+and gen_js_int n = string_of_int n
+
+and gen_js_str s = "'" ^ (Str.global_replace (Str.regexp_string "'") "\\'" s) ^ "'"
+
+and gen_js_strs ss =
+  match ss with
+  | [] -> ""
+  | [first] -> gen_js_str first
+  | first :: rest -> (gen_js_str first) ^ ", " ^ (gen_js_strs rest)
+
+and gen_js_exps exps =
+  match exps with
+  | [] -> ""
+  | [first] -> gen_js_exp first
+  | first :: rest -> (gen_js_exp first) ^ ", " ^ (gen_js_exps rest)
+
+and gen_js_props ps =
+  match ps with
+  | [] -> ""
+  | [first] -> gen_js_prop first
+  | first :: rest -> (gen_js_prop first) ^ ", " ^ (gen_js_props rest)
+
+and gen_js_pos p =
+  (*if Pos.compare p Pos.dummy = 0
+  then*) "Pos_dummy"
+  (*else begin
+    let (s, e, b) = p in
+    let start = "{ pos_fname: " ^ (gen_js_str s.pos_fname) ^ ", pos_lnum: " ^ (gen_js_int s.pos_lnum) ^ ", pos_bol: " ^ (gen_js_int s.pos_bol) ^ ", pos_cnum: " ^ (gen_js_int s.pos_cnum) ^ " }" in
+    let _end = "{ pos_fname: " ^ (gen_js_str e.pos_fname) ^ ", pos_lnum: " ^ (gen_js_int e.pos_lnum) ^ ", pos_bol: " ^ (gen_js_int e.pos_bol) ^ ", pos_cnum: " ^ (gen_js_int e.pos_cnum) ^ " }" in
+    "[" ^ start ^ ", " ^ _end ^ ", " ^ (gen_js_bool b) ^ "]"
+  end*)

@@ -2,7 +2,7 @@
 
 INCLUDES = analyses/cfg,analyses/cps,analyses/sym,analyses/ses,js,exprjs,ljs,util,experimental,test,optimization
 
-OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str,graph -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES) -cflags -g 
+OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix,str -lflags -I,../lib -Is $(INCLUDES) -cflags -annot -cflags -I,../lib -Is $(INCLUDES) -cflags -g
 
 debug: builddir
 	@rm -f s5.d.byte

@@ -1,10 +1,10 @@
-open List
+(*open List*)
 open Prelude
 open Ljs
-open Ljs_eval
-open Ljs_cesk
+(*open Ljs_eval
+open Ljs_cesk*)
 open Ljs_syntax
-open Ljs_pretty_html
+(*open Ljs_pretty_html
 open Reachability
 open Ljs_fold_const
 open Ljs_propagate_const
@@ -49,10 +49,10 @@ let showNodeType (nodeType : nodeType) : string =
   | EnvT -> "S5-env"
   | AnswerT -> "Snapshot"
 
-
+*)
 module S5 = struct
-
   open Format
+(*
   open Js_to_exprjs
   open Exprjs_to_ljs
   open Exprjs_syntax
@@ -543,7 +543,22 @@ module S5 = struct
   let showType fromTypes toTypes =
     let showTypeList types = String.concat " " (List.map showNodeType types) in
     "(" ^ showTypeList fromTypes ^ " -> " ^ showTypeList toTypes ^ ")"
+*)
   let main () : unit =
+    let path = "../envs/es5.env" in
+    let f = Ljs.parse_es5_env (open_in path) path in
+    let e = f (Ljs_syntax.Id (Pos.dummy, "@@@PLACEHOLDER@@@")) in
+(*    Ljs_pretty.exp e std_formatter;;*)
+    let exp = Str.global_replace (Str.regexp_string "{ type: 'Id', pos: Pos_dummy, id: '@@@PLACEHOLDER@@@' }") "exp" (Ljs_syntax.gen_js_exp e) in
+    let code =
+      "import { Pos_dummy } from './prelude';\n" ^
+      "import { Exp } from './syntax';\n" ^
+      "\n" ^
+      "export function createEnv(exp: Exp): Exp {\n" ^
+      "  return " ^ exp ^ ";\n" ^
+      "}\n" in
+    print_string code;;
+(*
     Arg.parse
       [
         (* Global Options *)
@@ -668,7 +683,7 @@ module S5 = struct
       ("Usage: s5 <action> <path> ...\n"
        ^ "  After loading, sources are held on a stack.\n"
        ^ "  There are five types: "
-       ^ String.concat ", " (List.map showNodeType [JsT; EjsT; LjsT; CpsT; EnvT]) ^ "\n");;
+       ^ String.concat ", " (List.map showNodeType [JsT; EjsT; LjsT; CpsT; EnvT]) ^ "\n");;*)
 
 end;;
 S5.main ()
