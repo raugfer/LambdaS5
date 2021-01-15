@@ -551,12 +551,11 @@ module S5 = struct
 (*    Ljs_pretty.exp e std_formatter;;*)
     let exp = Str.global_replace (Str.regexp_string "{ type: 'Id', pos: Pos_dummy, id: '@@@PLACEHOLDER@@@' }") "exp" (Ljs_syntax.gen_js_exp e) in
     let code =
-      "import { Pos_dummy } from './prelude';\n" ^
-      "import { Exp } from './syntax';\n" ^
-      "\n" ^
-      "export function createEnv(exp: Exp): Exp {\n" ^
+      "function createEnv(exp) {\n" ^
       "  return " ^ exp ^ ";\n" ^
-      "}\n" in
+      "}\n" ^
+      "exports.createEnv = createEnv;\n"
+    in
     print_string code;;
 (*
     Arg.parse

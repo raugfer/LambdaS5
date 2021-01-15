@@ -312,11 +312,11 @@ and gen_js_props ps =
   | first :: rest -> (gen_js_prop first) ^ ", " ^ (gen_js_props rest)
 
 and gen_js_pos p =
-  (*if Pos.compare p Pos.dummy = 0
-  then*) "Pos_dummy"
-  (*else begin
+  if Pos.compare p Pos.dummy = 0
+  then "[null, null, true]"
+  else begin
     let (s, e, b) = p in
     let start = "{ pos_fname: " ^ (gen_js_str s.pos_fname) ^ ", pos_lnum: " ^ (gen_js_int s.pos_lnum) ^ ", pos_bol: " ^ (gen_js_int s.pos_bol) ^ ", pos_cnum: " ^ (gen_js_int s.pos_cnum) ^ " }" in
     let _end = "{ pos_fname: " ^ (gen_js_str e.pos_fname) ^ ", pos_lnum: " ^ (gen_js_int e.pos_lnum) ^ ", pos_bol: " ^ (gen_js_int e.pos_bol) ^ ", pos_cnum: " ^ (gen_js_int e.pos_cnum) ^ " }" in
     "[" ^ start ^ ", " ^ _end ^ ", " ^ (gen_js_bool b) ^ "]"
-  end*)
+  end
